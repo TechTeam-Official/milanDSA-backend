@@ -7,6 +7,7 @@ import { registerRoutes } from "./utils/routeReg";
 import { setupSwagger } from "./config/swagger";
 import { ENV } from "./config/env";
 import { debugAuthHeader } from "./middleware/debugAuth";
+
 const app = express();
 
 app.use(cors());
