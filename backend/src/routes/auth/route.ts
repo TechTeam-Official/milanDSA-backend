@@ -1,22 +1,30 @@
 import { Router } from "express";
-import { timeStamp } from "node:console";
+import { requireAuth } from "../../middleware/auth/auth_middleware";
+import { debugAuthHeader } from "../..//middleware/debugAuth";
 
 const router = Router();
+
 /**
  * @swagger
- * /auth:
+ * /auth/me:
  *   get:
- *     summary: Auth check
+ *     summary: Get logged-in user
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Service is healthy
+ *         description: User info
  */
-router.get("/", (_req, res) => {
-  res.json({
-    status: "ok",
-    service: "auth-service",
-    uptime: process.uptime(),
-    timeStamp: new Date().toDateString(),
-  });
-});
+router.get(
+  "/me",
+  debugAuthHeader, // 👈 TEMPORARY (must be first)
+  requireAuth, // 👈 Auth0 middleware
+  (req, res) => {
+    res.json({
+      message: "User authenticated",
+      user: req.auth,
+    });
+  }
+);
+
 export default router;

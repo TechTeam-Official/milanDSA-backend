@@ -1,22 +1,27 @@
-import express from "express";
-const app = express();
-import { auth } from "express-oauth2-jwt-bearer";
+import { Request, Response, NextFunction } from "express";
+import { jwtVerifier } from "../../config/auth";
 
-const port = process.env.PORT || 8080;
+export const requireAuth = jwtVerifier;
 
-const jwtCheck = auth({
-  audience: "milanauthapi",
-  issuerBaseURL: "https://dev-70t4tgy5bscjagaa.us.auth0.com/",
-  tokenSigningAlg: "RS256",
-});
+export const attachUser = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.auth || !req.auth.payload) {
+    return res.status(401).json({ message: "Unauthenticated" });
+  }
 
-// enforce on all endpoints
-app.use(jwtCheck);
+  const payload = req.auth.payload;
 
-app.get("/authorized", function (req, res: any) {
-  res.send("Secured Resource");
-});
+  const userId = payload.sub;
+  if (!userId) {
+    return res.status(401).json({ message: "Invalid token" });
+  }
 
-app.listen(port);
+  req.user = {
+    id: userId,
+    email: typeof payload.email === "string" ? payload.email : undefined,
+    roles: Array.isArray(payload["https://milan.app/roles"])
+      ? (payload["https://milan.app/roles"] as string[])
+      : [],
+  };
 
-console.log("Running on port ", port);
+  next();
+};
