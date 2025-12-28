@@ -1,23 +1,10 @@
-interface UserIdentity {
-  id: string;
-  email?: string;
-  roles: string[];
-}
-
-export class AuthService {
-  static getProfile(user: UserIdentity) {
-    return {
-      id: user.id,
-      email: user.email,
-      roles: user.roles,
-    };
-  }
-
-  static isStudent(user: UserIdentity) {
-    return user.roles.includes("STUDENT");
-  }
-
-  static isAdmin(user: UserIdentity) {
-    return user.roles.includes("ADMIN");
-  }
-}
+// src/service/auth/auth_service.ts
+export const buildAuthResponse = (authPayload: any) => {
+  return {
+    subject: authPayload?.payload?.sub,
+    audience: authPayload?.payload?.aud,
+    issuedAt: authPayload?.payload?.iat,
+    expiresAt: authPayload?.payload?.exp,
+    scopes: authPayload?.payload?.scope ?? [],
+  };
+};

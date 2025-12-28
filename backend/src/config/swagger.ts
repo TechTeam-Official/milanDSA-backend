@@ -1,21 +1,21 @@
-import swaggerUi from "swagger-ui-express";
-import swaggerJsdoc from "swagger-jsdoc";
 import { Express } from "express";
+import swaggerUi from "swagger-ui-express";
+import swaggerJSDoc from "swagger-jsdoc";
 import { ENV } from "./env";
 
-export const setupSwagger = (app: Express) => {
-  const options: swaggerJsdoc.Options = {
+export function setupSwagger(app: Express) {
+  const swaggerSpec = swaggerJSDoc({
     definition: {
       openapi: "3.0.0",
       info: {
-        title: "Ticketing Service API",
+        title: `${ENV.SERVICE_NAME} API`,
         version: "1.0.0",
-        description: "Backend for Milan Ticketing System",
+        description: "API documentation for Milan backend",
       },
       servers: [
         {
           url: `http://localhost:${ENV.PORT}`,
-          description: "Local development",
+          description: "Local server",
         },
       ],
       components: {
@@ -33,10 +33,16 @@ export const setupSwagger = (app: Express) => {
         },
       ],
     },
-    apis: ["./src/routes/**/*.ts"],
-  };
+    apis: ["src/routes/**/*.ts", "src/controllers/**/*.ts"],
+  });
 
-  const specs = swaggerJsdoc(options);
-
-  app.use("/docs", swaggerUi.serve, swaggerUi.setup(specs));
-};
+  app.use(
+    "/docs",
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerSpec, {
+      swaggerOptions: {
+        persistAuthorization: true, // 🔑 CRITICAL FIX
+      },
+    })
+  );
+}

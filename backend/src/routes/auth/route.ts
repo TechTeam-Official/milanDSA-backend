@@ -1,6 +1,6 @@
 import { Router } from "express";
+import { getMeController } from "../../controllers/auth/auth_controller";
 import { requireAuth } from "../../middleware/auth/auth_middleware";
-import { debugAuthHeader } from "../..//middleware/debugAuth";
 
 const router = Router();
 
@@ -8,23 +8,13 @@ const router = Router();
  * @swagger
  * /auth/me:
  *   get:
- *     summary: Get logged-in user
  *     security:
  *       - bearerAuth: []
+ *     summary: Get authenticated user
  *     responses:
  *       200:
- *         description: User info
+ *         description: Authenticated
  */
-router.get(
-  "/me",
-  debugAuthHeader, // 👈 TEMPORARY (must be first)
-  requireAuth, // 👈 Auth0 middleware
-  (req, res) => {
-    res.json({
-      message: "User authenticated",
-      user: req.auth,
-    });
-  }
-);
+router.get("/me", requireAuth, getMeController);
 
 export default router;

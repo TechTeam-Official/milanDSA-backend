@@ -10,14 +10,17 @@ import { debugAuthHeader } from "./middleware/debugAuth";
 
 const app = express();
 
+/* ------------------------------
+   Core middlewares
+-------------------------------- */
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
 app.use(morgan("dev"));
 
-/**
- * Root service descriptor
- */
+/* ------------------------------
+   Root health endpoint
+-------------------------------- */
 app.get("/", (_req, res) => {
   res.status(200).json({
     service: ENV.SERVICE_NAME,
@@ -27,18 +30,25 @@ app.get("/", (_req, res) => {
   });
 });
 
-app.use(debugAuthHeader);
-
-/**
- * Swagger (disable in prod if needed)
- */
+/* ------------------------------
+   Swagger (DEV ONLY)
+   Must come BEFORE routes
+-------------------------------- */
 if (ENV.NODE_ENV !== "production") {
   setupSwagger(app);
 }
 
-/**
- * API routes
- */
+/* ------------------------------
+   Debug auth header
+   AFTER swagger, BEFORE routes
+-------------------------------- */
+if (ENV.NODE_ENV !== "production") {
+  app.use(debugAuthHeader);
+}
+
+/* ------------------------------
+   API routes
+-------------------------------- */
 registerRoutes(app);
 
 export default app;
