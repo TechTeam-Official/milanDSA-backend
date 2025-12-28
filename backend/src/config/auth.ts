@@ -1,5 +1,5 @@
 import { auth } from "express-oauth2-jwt-bearer";
-import { ENV } from "./env"; // ✅ FIXED
+import { ENV } from "./env";
 
 export const authMiddleware = auth({
   audience: ENV.AUTH0.AUDIENCE,

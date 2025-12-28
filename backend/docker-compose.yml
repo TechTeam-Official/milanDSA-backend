@@ -8,5 +8,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8080
-      AUTH0_DOMAIN: dev-70t4tgy5bscjagaa.us.auth0.com
+      # ⚠️ Replaced AUTH0_DOMAIN with the full URL expected by the SDK
+      AUTH0_ISSUER_BASE_URL: https://dev-70t4tgy5bscjagaa.us.auth0.com/
       AUTH0_AUDIENCE: milanauthapi
+      # ⚠️ Added this to match your middleware's expectations
+      AUTH0_TOKEN_ALG: RS256
