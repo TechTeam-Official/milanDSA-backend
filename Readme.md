@@ -194,11 +194,11 @@ Routes can be documented directly inside `route.ts` files using JSDoc comments.
 📄 `.env`
 
 ```env
-PORT=4000
+PORT=8080
 NODE_ENV=development
 ```
 
-Port **4000** is intentionally used so developers can immediately recognize the backend service.
+Port **8080** is intentionally used so developers can immediately recognize the backend service.
 
 ---
 
@@ -219,13 +219,13 @@ npm run dev
 Server will be available at:
 
 ```txt
-http://localhost:4000
+http://localhost:8080
 ```
 
 Swagger UI:
 
 ```txt
-http://localhost:4000/docs
+http://localhost:8080/docs
 ```
 
 ---
