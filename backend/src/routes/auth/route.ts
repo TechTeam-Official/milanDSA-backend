@@ -1,20 +1,9 @@
-import { Router } from "express";
-import { getMeController } from "../../controllers/auth/auth_controller";
-import { requireAuth } from "../../middleware/auth/auth_middleware";
-
+import { Router } from 'express';
+import { authController } from '../../controllers/auth/auth_controller';
 const router = Router();
 
-/**
- * @swagger
- * /auth/me:
- *   get:
- *     security:
- *       - bearerAuth: []
- *     summary: Get authenticated user
- *     responses:
- *       200:
- *         description: Authenticated
- */
-router.get("/", requireAuth, getMeController);
+router.post('/send-otp', authController.sendOtp);
+router.post('/verify-otp', authController.verifyOtp);
+router.post('/verify-pass', authController.verifyPass); // ? Added
 
 export default router;
