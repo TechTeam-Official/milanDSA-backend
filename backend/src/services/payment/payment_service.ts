@@ -1,47 +1,39 @@
-import { savePayment, readPayment } from '../../lib/paymentMemory';
-import { supabase } from '../../config/supabase';
+import { supabase } from "../../config/supabase";
 
-export const paymentService = {
-  
-  async handleWebhook(payload: any, secret?: string) {
-    // ?? Security Check
-    if (secret !== process.env.KONFHUB_WEBHOOK_SECRET) {
-      throw new Error('Unauthorized Webhook Secret');
-    }
-
-    const attendee = payload.Data?.['Attendee Details'];
-    if (!attendee) return { status: 'ignored' };
-
-    const email = attendee['Email Address'];
-    const amount = attendee['Amount Details']?.['Amount Paid'];
-
-    // 1. Update Memory (Instant Frontend Redirect)
-    savePayment({
-      status: 'COMPLETED',
-      email: email,
-      timestamp: Date.now(),
-      amount: amount
-    });
-
-    // 2. Update Database (Persistent Record)
-    await supabase.from('payments').upsert({
-      email: email,
-      amount: amount,
-      status: 'COMPLETED',
-      booking_id: attendee['Booking Id']
-    });
-
-    return { received: true };
-  },
-
-  checkStatus(email: string) {
-    if (!email) return { paid: false, error: 'Email required' };
-
-    // Check Memory
-    const memory = readPayment(email);
-    if (memory) return { paid: true, data: memory };
-
-    // Fallback: Check DB (if memory expired but user refreshed page)
-    return { paid: false }; 
-  }
+export type PaymentMemory = {
+  status: "COMPLETED";
+  email: string;
+  timestamp: number;
+  amount?: number;
 };
+
+const memoryStore = new Map<string, PaymentMemory>();
+
+export async function savePayment(data: PaymentMemory) {
+  // 1. Update Memory (Instant Frontend Redirect)
+  memoryStore.set(data.email, data);
+  console.log(`💾 Memory: Cached payment for ${data.email}`);
+
+  // 2. Update Database (Persistent Record)
+  const { error } = await supabase.from("payments").upsert({
+    email: data.email,
+    amount: data.amount,
+    status: data.status,
+    created_at: new Date(data.timestamp),
+  });
+
+  if (error) console.error("❌ DB Error:", error.message);
+  else console.log(`✅ DB: Registered payment for ${data.email}`);
+}
+
+export function readPayment(email: string) {
+  const record = memoryStore.get(email);
+  if (!record) return null;
+
+  // Cleanup: If older than 2 mins, delete
+  if (Date.now() - record.timestamp > 120000) {
+    memoryStore.delete(email);
+    return null;
+  }
+  return record;
+}
