@@ -1,5 +1,5 @@
 type PaymentMemory = {
-  status: 'COMPLETED';
+  status: "COMPLETED";
   email: string;
   timestamp: number;
   amount?: number;
@@ -10,7 +10,8 @@ const memoryStore = new Map<string, PaymentMemory>();
 
 export function savePayment(data: PaymentMemory) {
   memoryStore.set(data.email, data);
-  console.log(\?? Memory: Stored payment for \\);
+  // 👇 Fixed the backticks here
+  console.log(`💾 Memory: Stored payment for ${data.email}`);
 }
 
 export function readPayment(email: string) {
