@@ -1,27 +1,34 @@
-type PaymentMemory = {
+import { supabase } from "../config/supabase";
+
+// 1. Define the type to fix error 1
+export type PaymentMemory = {
   status: "COMPLETED";
   email: string;
   timestamp: number;
   amount?: number;
 };
 
-// Map<Email, PaymentData>
+// 2. Define the store to fix error 2
 const memoryStore = new Map<string, PaymentMemory>();
 
-export function savePayment(data: PaymentMemory) {
+export async function savePayment(data: PaymentMemory) {
+  // Save to Memory (for immediate frontend read)
   memoryStore.set(data.email, data);
-  // 👇 Fixed the backticks here
-  console.log(`💾 Memory: Stored payment for ${data.email}`);
-}
+  console.log(`💾 Memory: Cached payment for ${data.email}`);
 
-export function readPayment(email: string) {
-  const record = memoryStore.get(email);
-  if (!record) return null;
+  // Save to Supabase (for permanent registration)
+  const { error } = await supabase.from("payments").insert([
+    {
+      email: data.email,
+      amount: data.amount,
+      status: data.status,
+      created_at: new Date(data.timestamp),
+    },
+  ]);
 
-  // Cleanup: If older than 2 mins, delete
-  if (Date.now() - record.timestamp > 120000) {
-    memoryStore.delete(email);
-    return null;
+  if (error) {
+    console.error(`❌ DB Error: ${error.message}`);
+  } else {
+    console.log(`✅ DB: Registered payment for ${data.email}`);
   }
-  return record;
 }
