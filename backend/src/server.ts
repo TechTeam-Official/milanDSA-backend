@@ -36,6 +36,7 @@ app.get("/metrics", async (_req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/webhook", express.raw({ type: "application/json" }));
 
 // Server Start
 const PORT = process.env.PORT || 5000;

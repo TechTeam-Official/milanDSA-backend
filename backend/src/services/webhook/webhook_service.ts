@@ -3,29 +3,46 @@ import { supabase } from "../../lib/supabase";
 
 export const webhookService = {
   async processPost(payload: any) {
-    const { booking_id, status } = payload;
+    const attendee = payload?.Data?.["Attendee Details"];
 
-    if (!booking_id) {
-      throw new Error("No booking_id found in webhook payload");
+    if (!attendee) {
+      console.error("❌ Missing Attendee Details", payload);
+      return { status: "ignored" };
+    }
+
+    const bookingId = attendee["Booking Id"];
+    const paymentStatus = payload?.["Event Type"];
+
+    if (paymentStatus !== "registration") {
+      console.log("Ignored KonfHub event:", paymentStatus);
+      return { status: "ignored" };
+    }
+
+    const paymentId = attendee["payment_id"];
+
+    if (!bookingId) {
+      console.error("❌ Missing Booking Id", attendee);
+      return { status: "ignored" };
     }
 
     const { data, error } = await supabase
       .from("payments")
       .update({
-        status:
-          status === "completed" || status === "success" ? "success" : "failed",
+        status: "success",
+        payment_id: paymentId,
+        raw_payload: payload,
       })
-      .eq("booking_id", booking_id)
+      .eq("booking_id", bookingId)
       .select();
 
     if (error) {
-      console.error("Supabase Update Error:", error);
-      throw error;
+      console.error("❌ Supabase Update Error:", error);
+      return { status: "db_error" };
     }
 
     return {
       status: "success",
-      updated_booking: booking_id,
+      bookingId,
       record: data,
     };
   },
@@ -33,7 +50,7 @@ export const webhookService = {
   async processGet() {
     return {
       status: "active",
-      message: "Webhook endpoint reachable",
+      message: "KonfHub webhook reachable",
     };
   },
 };
