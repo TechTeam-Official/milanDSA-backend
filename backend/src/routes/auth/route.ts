@@ -1,6 +1,7 @@
+// src/routes/auth/auth_routes.ts
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { authController } from "../../controllers/auth/auth_controller";
+import authController from "../../controllers/auth/auth_controller";
 
 const router = Router();
 
@@ -16,7 +17,6 @@ const otpLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Apply limiter to send-otp only
 router.post("/send-otp", otpLimiter, authController.sendOtp);
 router.post("/verify-otp", authController.verifyOtp);
 router.post("/verify-pass", authController.verifyPass);
