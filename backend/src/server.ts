@@ -1,3 +1,7 @@
+import dotenv from "dotenv";
+dotenv.config(); // Must stay at the top
+
+// ... rest of your imports
 import express from "express";
 import cors from "cors";
 
@@ -8,9 +12,6 @@ import webhookRoutes from "./routes/webhook/route";
 const app = express();
 
 app.use(cors());
-
-// ❌ DO NOT apply express.json globally anymore
-// app.use(express.json());
 
 // ✅ Normal APIs get JSON
 app.use("/api/auth", express.json(), authRoutes);
