@@ -48,23 +48,27 @@ export const authService = {
               <table width="400" border="0" cellspacing="0" cellpadding="0" 
                      background="cid:milan_card" 
                      bgcolor="#4a0404" 
-                     style="width:400px; height:711px; background-image: url('cid:milan_card'); background-size: cover; background-position: center; border-radius: 12px; overflow: hidden;">
+                     style="width:400px; max-width:400px; height:711px; border-radius: 12px; overflow: hidden;">
                 <tr>
-                  <td align="center" valign="top" height="711" background="cid:milan_card" style="height:711px; background-image: url('cid:milan_card'); background-size: cover;">
+                  <td align="center" valign="top" height="711" background="cid:milan_card" style="height:711px; background-image: url('cid:milan_card'); background-repeat: no-repeat; background-size: 400px 711px;">
                     
-                    <div>
-                      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                        <tr><td height="320" style="line-height:320px; font-size:1px;">&nbsp;</td></tr>
+                    <div style="width:400px; margin: 0 auto;">
+                      <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <tr><td height="325" style="line-height:325px; font-size:1px;">&nbsp;</td></tr>
                       </table>
                       
-                      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                      <table border="0" cellpadding="0" cellspacing="0" width="100%">
                         <tr>
-                          <td align="center">
-                            <span style="font-family: Arial, sans-serif; font-size: 42px; font-weight: bold; color: #ffffff; letter-spacing: 12px; padding-left: 12px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
+                          <td align="center" style="padding-left:12px;">
+                            <span style="font-family: Arial, sans-serif; font-size: 44px; font-weight: bold; color: #ffffff; letter-spacing: 14px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">
                               ${otp}
                             </span>
                           </td>
                         </tr>
+                      </table>
+
+                      <table border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <tr><td height="330" style="line-height:330px; font-size:1px;">&nbsp;</td></tr>
                       </table>
                     </div>
 
@@ -79,7 +83,7 @@ export const authService = {
       </html>
     `;
 
-    // 4. Send email with CID attachment for maximum image reliability
+    // 4. Send email with CID attachment
     await transporter.sendMail({
       from: `"Milan '26" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -113,7 +117,6 @@ export const authService = {
       throw new Error("OTP Expired");
     }
 
-    // Success: Clean up and issue JWT
     await supabase.from("otps").delete().eq("email", email);
     const token = signJwt({ email, id: "user_" + Date.now() });
     return { success: true, token, user: { email, name: email.split("@")[0] } };
