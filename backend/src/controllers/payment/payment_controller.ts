@@ -1,20 +1,21 @@
-import { Request, Response } from 'express';
-import { paymentService } from '../../services/payment/payment_service';
+// controllers/payment/payment_controller.ts
+import { Request, Response } from "express";
+import { supabase } from "../../lib/supabase";
 
-export const paymentController = {
-  webhook: async (req: Request, res: Response) => {
-    try {
-      const secret = req.headers['x-konfhub-secret'] as string;
-      const result = await paymentService.handleWebhook(req.body, secret);
-      res.json(result);
-    } catch (e: any) {
-      res.status(401).json({ error: e.message });
-    }
-  },
+export const checkPaymentStatus = async (req: Request, res: Response) => {
+  const { bookingId } = req.query;
 
-  checkStatus: (req: Request, res: Response) => {
-    const email = req.query.email as string;
-    const result = paymentService.checkStatus(email);
-    res.json(result);
+  if (!bookingId) return res.status(400).json({ error: "Missing bookingId" });
+
+  const { data, error } = await supabase
+    .from("payments")
+    .select("status")
+    .eq("booking_id", bookingId)
+    .single();
+
+  if (error || !data) {
+    return res.json({ paid: false });
   }
+
+  return res.json({ paid: data.status === "success" });
 };
