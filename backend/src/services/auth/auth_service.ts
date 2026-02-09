@@ -9,33 +9,63 @@ export const authService = {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    // 🔒 Safe Upsert
+    // 🔒 Safe Upsert: Clear old and insert new
     await supabase.from("otps").delete().eq("email", email);
-
     const { error } = await supabase
       .from("otps")
       .insert({ email, code: otp, expires_at: expiresAt });
 
     if (error) throw new Error(error.message);
 
-    // 👇 Fixed the HTML String here (added backticks)
+    // 🖼️ Dynamic Image Logic
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://srmmilan.in";
+    const imagePath = process.env.OTP_IMAGE_PATH || "/Login/milan-otp-card.png";
+    const bgImageUrl = `${siteUrl}${imagePath}`;
+
+    // Environment prefix for subject line (Staging/Prod)
+    const envPrefix =
+      process.env.NODE_ENV === "production"
+        ? ""
+        : `[${process.env.NODE_ENV?.toUpperCase()}] `;
+
     const htmlContent = `
-      <div style="background-color: #f3e8ff; padding: 20px; font-family: sans-serif;">
-        <div style="max-width: 480px; margin: 0 auto; background: #4a0404; color: white; padding: 20px; border-radius: 10px;">
-          <h1 style="text-align: center;">MILAN '26</h1>
-          <p style="text-align: center;">Your verification code is:</p>
-          <div style="background: black; padding: 15px; text-align: center; border-radius: 5px; font-size: 24px; letter-spacing: 5px; font-weight: bold;">
-            ${otp}
-          </div>
-          <p style="text-align: center; font-size: 12px; margin-top: 20px;">Valid for 10 minutes.</p>
-        </div>
-      </div>
+      <!DOCTYPE html>
+      <html>
+      <body style="margin:0; padding:0; background-color: #0b0b0b;">
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr>
+            <td align="center" style="padding: 20px 0;">
+              <table width="400" border="0" cellspacing="0" cellpadding="0" style="width:400px; border-radius: 12px; overflow: hidden;">
+                <tr>
+                  <td align="center" background="${bgImageUrl}" bgcolor="#4a0404" width="400" height="711" valign="top" style="background-size: cover; background-position: center; width:400px; height:711px;">
+                    <div>
+                      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <tr><td height="320" style="line-height:320px; font-size:1px;">&nbsp;</td></tr>
+                      </table>
+                      <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                        <tr>
+                          <td align="center">
+                            <span style="font-family: 'Courier New', Courier, monospace; font-size: 40px; font-weight: bold; color: #ffffff; letter-spacing: 12px; padding-left: 12px;">
+                              ${otp}
+                            </span>
+                          </td>
+                        </tr>
+                      </table>
+                    </div>
+                    </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
     `;
 
     await transporter.sendMail({
       from: `"Milan '26" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: `Your Login Code: ${otp}`,
+      subject: `${envPrefix}Your Login Code: ${otp}`,
       html: htmlContent,
     });
 
@@ -53,19 +83,14 @@ export const authService = {
     if (!data) throw new Error("Invalid or Expired OTP");
     if (new Date() > new Date(data.expires_at)) throw new Error("OTP Expired");
 
-    // Cleanup
     await supabase.from("otps").delete().eq("email", email);
 
-    // Return JWT
     const token = signJwt({ email, id: "user_" + Date.now() });
     return { success: true, token, user: { email, name: email.split("@")[0] } };
   },
 
-  // Verify Pass Logic
   verifyPass(email: string, passType: string) {
     const domain = email.split("@")[1]?.toLowerCase();
-
-    // SRM Restricted Pass Check
     if (passType === "single" || passType === "pro") {
       if (!domain?.endsWith("srmist.edu.in")) {
         throw new Error(
