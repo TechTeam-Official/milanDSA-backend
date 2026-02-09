@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { supabase } from "../../config/supabase";
 import { transporter } from "../../config/nodemailer";
 import { signJwt } from "../../utils/jwt";
@@ -6,23 +7,28 @@ export const authService = {
   async sendOtp(email: string) {
     if (!email) throw new Error("Email required");
 
+    // 1. Generate Plain OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 2. Hash OTP for Database Storage
+    const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    // 🔒 Safe Upsert: Clear old and insert new
-    await supabase.from("otps").delete().eq("email", email);
+    // 3. FIX: Atomic Upsert (Prevents the "stuck" OTP bug)
+    // If a record for this email exists, it overwrites it. If not, it creates it.
     const { error } = await supabase
       .from("otps")
-      .insert({ email, code: otp, expires_at: expiresAt });
+      .upsert(
+        { email, code: otpHash, expires_at: expiresAt },
+        { onConflict: "email" },
+      );
 
     if (error) throw new Error(error.message);
 
-    // 🖼️ Dynamic Image Logic
+    // 4. Email Template Logic
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://srmmilan.in";
     const imagePath = process.env.OTP_IMAGE_PATH || "/Login/milan-otp-card.png";
     const bgImageUrl = `${siteUrl}${imagePath}`;
-
-    // Environment prefix for subject line (Staging/Prod)
     const envPrefix =
       process.env.NODE_ENV === "production"
         ? ""
@@ -73,16 +79,25 @@ export const authService = {
   },
 
   async verifyOtp(email: string, otp: string) {
+    // Hash incoming OTP to compare with DB
+    const incomingHash = crypto.createHash("sha256").update(otp).digest("hex");
+
     const { data } = await supabase
       .from("otps")
       .select("*")
       .eq("email", email)
-      .eq("code", otp)
+      .eq("code", incomingHash)
       .maybeSingle();
 
     if (!data) throw new Error("Invalid or Expired OTP");
-    if (new Date() > new Date(data.expires_at)) throw new Error("OTP Expired");
 
+    // Check Expiry
+    if (new Date() > new Date(data.expires_at)) {
+      await supabase.from("otps").delete().eq("email", email);
+      throw new Error("OTP Expired");
+    }
+
+    // Success: Cleanup
     await supabase.from("otps").delete().eq("email", email);
 
     const token = signJwt({ email, id: "user_" + Date.now() });
