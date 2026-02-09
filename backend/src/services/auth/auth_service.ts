@@ -12,7 +12,7 @@ export const authService = {
     const otpHash = crypto.createHash("sha256").update(otp).digest("hex");
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    // 1. Upsert to DB (Fixed the "Stuck OTP" bug)
+    // 1. Atomic Upsert to fix the "Stuck OTP" bug
     const { error } = await supabase
       .from("otps")
       .upsert(
@@ -22,8 +22,7 @@ export const authService = {
 
     if (error) throw new Error(error.message);
 
-    // 2. Resolve the local image path
-    // Adjust the path based on your folder structure relative to this file
+    // 2. FIXED: Local image path resolution
     const imageLocalPath = path.resolve(
       __dirname,
       "../../../assets/milan-otp-card.png",
@@ -34,7 +33,7 @@ export const authService = {
         ? ""
         : `[${process.env.NODE_ENV?.toUpperCase()}] `;
 
-    // 3. Bulletproof Template using CID
+    // 3. Template with CID and Outlook VML Fallback
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -71,7 +70,7 @@ export const authService = {
       </html>
     `;
 
-    // 4. Send email with the file attached as a CID
+    // 4. Send email with CID attachment
     await transporter.sendMail({
       from: `"Milan '26" <${process.env.EMAIL_USER}>`,
       to: email,
@@ -81,7 +80,7 @@ export const authService = {
         {
           filename: "milan-otp-card.png",
           path: imageLocalPath,
-          cid: "milan_card", // This MUST match cid:milan_card in the HTML
+          cid: "milan_card",
         },
       ],
     });
