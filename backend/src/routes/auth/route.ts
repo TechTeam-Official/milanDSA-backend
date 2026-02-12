@@ -1,18 +1,24 @@
-// src/routes/auth/auth_routes.ts
 import { Router } from "express";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import authController from "../../controllers/auth/auth_controller";
 
 const router = Router();
 
-// 🛡️ Rate Limiter: 3 OTP requests per 10 minutes per IP
 const otpLimiter = rateLimit({
-  windowMs: 10 * 60 * 1000,
+  windowMs: 10 * 60 * 1000, // 10 minutes
   max: 3,
+
+  keyGenerator: (req) => {
+    const email = req.body?.email?.toLowerCase()?.trim() || "unknown";
+    const ip = ipKeyGenerator(req.ip); // ✅ FIXED
+    return `${email}-${ip}`;
+  },
+
   message: {
     success: false,
-    message: "Too many attempts. Please try again in 10 minutes.",
+    message: "Too many OTP requests. Please try again in 10 minutes.",
   },
+
   standardHeaders: true,
   legacyHeaders: false,
 });

@@ -4,21 +4,41 @@ dotenv.config(); // ⚡ Load variables before anything else
 import express from "express";
 import cors from "cors";
 
-// Note: If routes were in the same folder as server.ts before,
-// they are now likely at "./routes/..." relative to src/server.ts
 import authRoutes from "./routes/auth/route";
 import paymentRoutes from "./routes/payment/route";
 import webhookRoutes from "./routes/webhook/route";
 
 const app = express();
 
-app.use(cors());
+/**
+ * 🔥 IMPORTANT:
+ * Required if deploying behind Render, Railway, Nginx,
+ * Cloudflare, or any reverse proxy.
+ * Ensures req.ip works correctly for rate limiting.
+ */
+app.set("trust proxy", 1);
 
-// ✅ Normal APIs get JSON
+/**
+ * 🌍 CORS Configuration
+ * Adjust origin if needed for stricter security
+ */
+app.use(
+  cors({
+    origin: true, // or specify: "https://srmilan.in"
+    credentials: true,
+  }),
+);
+
+/**
+ * ✅ Normal APIs get JSON parsing
+ */
 app.use("/api/auth", express.json(), authRoutes);
 app.use("/api/payment", express.json(), paymentRoutes);
 
-// ✅ Webhooks get RAW body ONLY
+/**
+ * ✅ Webhooks get RAW body ONLY
+ * (Important for signature verification)
+ */
 app.use("/api/webhook", webhookRoutes);
 
 const PORT = process.env.PORT || 8080;
